@@ -36,6 +36,10 @@ def detect_direction(frame):
     else:
         return "✅ Path is clear"
 
+@app.get("/")
+def root():
+    return {"message": "Camera Navigation API is running"}
+
 @app.post("/detect/")
 async def detect(file: UploadFile = File(...)):
     image_bytes = await file.read()
