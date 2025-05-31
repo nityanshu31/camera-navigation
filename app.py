@@ -6,7 +6,9 @@ from PIL import Image
 import io
 
 app = Flask(__name__)
-model = YOLO("yolov8n.pt")  # lightweight YOLOv8 nano model
+
+# Load YOLO model once and force CPU to avoid GPU/Render memory issues
+model = YOLO("yolov8n.pt").to("cpu")
 
 def detect_direction(frame):
     width = frame.shape[1]
@@ -43,22 +45,28 @@ def detect_direction(frame):
 
 @app.route('/')
 def home():
-    return "YOLOv8 Obstacle Navigation API is running"
+    return "✅ YOLOv8 Obstacle Navigation API is running"
 
 @app.route('/detect', methods=['POST'])
 def detect():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-    
-    image_bytes = file.read()
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-    
-    direction = detect_direction(frame)
-    return jsonify({"direction": direction})
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part"}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+
+        image_bytes = file.read()
+        img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        img = img.resize((640, 480))  # Resize to reduce memory usage
+        frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+
+        direction = detect_direction(frame)
+        return jsonify({"direction": direction})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
