@@ -1,7 +1,6 @@
-fastapi
-uvicorn
-python-multipart
+flask
 opencv-python-headless
-numpy
-Pillow
 ultralytics
+pillow
+gunicorn
+numpy
